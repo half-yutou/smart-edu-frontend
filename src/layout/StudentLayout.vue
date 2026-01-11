@@ -5,7 +5,7 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div class="flex items-center gap-2 cursor-pointer" @click="router.push('/student/dashboard')">
           <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-lg flex items-center justify-center text-white font-bold">S</div>
-          <span class="font-bold text-lg text-gray-800">SmartEduHub</span>
+          <span class="font-bold text-lg text-gray-800">SmartEduHub <span class="text-xs text-gray-400 bg-gray-100 px-1 rounded ml-1">学生端</span></span>
         </div>
         
         <div class="hidden md:flex items-center gap-6 mx-8">
@@ -14,7 +14,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <span class="text-gray-600">你好, {{ user.nickname || '同学' }}</span>
+          <span class="text-gray-600">你好, {{ user.nickname || user.username }}</span>
           <n-button size="small" secondary @click="handleLogout">退出</n-button>
         </div>
       </div>
@@ -34,12 +34,18 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { NButton, useMessage } from 'naive-ui'
+import { logout } from '../api/auth'
 
 const router = useRouter()
 const message = useMessage()
 const user = JSON.parse(localStorage.getItem('user') || '{}')
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  try {
+    await logout()
+  } catch (e) {
+    // 即使后端报错也强制退出
+  }
   localStorage.clear()
   message.success('已退出')
   router.push('/login')

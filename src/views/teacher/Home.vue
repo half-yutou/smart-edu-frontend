@@ -77,6 +77,7 @@ import { AddOutline, PeopleOutline, CopyOutline, SchoolOutline } from '@vicons/i
 import { createClass, getTeacherClassList } from '../../api/class'
 import { useClipboard } from '@vueuse/core'
 import { formatGrade } from '../../utils/format'
+import { SUBJECT_OPTIONS, GRADE_OPTIONS } from '../../utils/constants'
 
 const router = useRouter()
 const message = useMessage()
@@ -100,38 +101,17 @@ const rules = {
   grade_id: [{ required: true, message: '请选择年级', trigger: ['blur', 'change'], type: 'number' }]
 }
 
-const subjectOptions = [
-  { label: '数学', value: 1 },
-  { label: '语文', value: 2 },
-  { label: '英语', value: 3 },
-  { label: '物理', value: 4 },
-  { label: '化学', value: 5 },
-  { label: '生物', value: 6 },
-  { label: '历史', value: 7 },
-  { label: '地理', value: 8 },
-  { label: '政治', value: 9 }
-]
-
-const gradeOptions = [
-  { label: '一年级', value: 1 },
-  { label: '二年级', value: 2 },
-  { label: '三年级', value: 3 },
-  { label: '四年级', value: 4 },
-  { label: '五年级', value: 5 },
-  { label: '六年级', value: 6 },
-  { label: '初一', value: 7 },
-  { label: '初二', value: 8 },
-  { label: '初三', value: 9 },
-  { label: '高一', value: 10 },
-  { label: '高二', value: 11 },
-  { label: '高三', value: 12 }
-]
+const subjectOptions = SUBJECT_OPTIONS
+const gradeOptions = GRADE_OPTIONS
 
 const fetchList = async () => {
   try {
     const res = await getTeacherClassList()
     if (res.code === 0) {
-      classList.value = res.data || []
+      classList.value = (res.data || []).map(item => ({
+        ...item,
+        id: item.id || item.ID,
+      }))
     }
   } catch (e) {}
 }
@@ -162,7 +142,7 @@ const handleCreate = () => {
 
 const copyCode = (code) => {
   copy(code)
-  message.success('邀请码已复制: ' + code)
+  message.success('邀请码已复制')
 }
 
 const goClassDetail = (cls) => {

@@ -25,8 +25,8 @@
         <div v-if="getDetail(q.id)">
           <!-- 如果是批改中状态 -->
           <div v-if="submission.status === 'submitted'" class="mb-4 p-4 bg-indigo-50 rounded border border-indigo-100 text-indigo-700 flex items-center">
-             <n-spin size="small" class="mr-3" /> 
-             <span>AI 正在智能批改中，请稍候刷新...</span>
+              <n-spin size="small" class="mr-3" /> 
+              <span>AI 正在智能批改中，请稍候刷新...</span>
           </div>
 
           <!-- 如果已批改，显示分数 -->
@@ -60,12 +60,11 @@
           <div>
             <p class="text-xs text-gray-400 mb-1">或者上传手写图片 (自动识别):</p>
             <n-upload
-              :action="uploadUrl"
-              :headers="uploadHeaders"
+              :custom-request="(options) => customUpload(options, q.id)"
+              @before-upload="beforeUpload"
               list-type="image-card"
               :max="1"
               :default-file-list="getImageList(q.id)"
-              @finish="({ file, event }) => handleUploadFinish(q.id, event)"
               @remove="() => handleRemoveImage(q.id)"
               :disabled="isSubmitted && submission.status === 'submitted'"
             >
@@ -99,6 +98,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { NButton, NIcon, NTag, NSpin, NCard, NInput, NUpload, useMessage } from 'naive-ui'
 import { ArrowBackOutline } from '@vicons/ionicons5'
 import { submitHomework, getSubmissionDetail } from '../../api/homework'
+import { uploadImage } from '../../api/resource'
 
 const route = useRoute()
 const router = useRouter()
@@ -109,9 +109,6 @@ const submission = ref(null)
 const answers = ref({}) // { qid: { text: '', image: '' } }
 const loading = ref(true)
 const submitting = ref(false)
-
-const uploadUrl = 'http://localhost:8080/api/v1/upload/image'
-const uploadHeaders = { Authorization: `Bearer ${localStorage.getItem('token')}` }
 
 // 从路由 state 获取作业数据
 const initData = () => {
@@ -132,16 +129,16 @@ const fetchSubmission = async () => {
   try {
     const res = await getSubmissionDetail(homework.value.id)
     if (res.code === 0 && res.data) {
-      submission.value = res.data
+      submission.value = { ...res.data, id: res.data.id || res.data.ID }
       // 回显答案（如果需要）
       // 这里简单处理：如果已提交，我们只在“批改结果区”显示，不回填到输入框，避免混淆
       // 除非用户想修改。为了方便用户修改，我们可以回填。
       if (res.data.details) {
         res.data.details.forEach(d => {
-           if (answers.value[d.question_id]) {
-             answers.value[d.question_id].text = d.answer_content // 注意：OCR 的内容也会回填到这里
-             answers.value[d.question_id].image = d.answer_image_url
-           }
+            if (answers.value[d.question_id]) {
+              answers.value[d.question_id].text = d.answer_content // 注意：OCR 的内容也会回填到这里
+              answers.value[d.question_id].image = d.answer_image_url
+            }
         })
       }
     }
@@ -151,14 +148,24 @@ const fetchSubmission = async () => {
   }
 }
 
-const handleUploadFinish = (qid, event) => {
-  const res = JSON.parse(event.target.response)
-  if (res.code === 0) {
+const customUpload = ({ file, onFinish, onError }, qid) => {
+  uploadImage(file.file).then(res => {
     answers.value[qid].image = res.data.url
     message.success('上传成功')
-  } else {
-    message.error('上传失败')
+    onFinish()
+  }).catch(err => {
+    message.error(err.message || '上传失败')
+    onError()
+  })
+}
+
+const beforeUpload = (data) => {
+  const isImage = data.file.file?.type === 'image/jpeg' || data.file.file?.type === 'image/png'
+  if (!isImage) {
+    message.error('只能上传 JPG 或 PNG 格式的图片')
+    return false
   }
+  return true
 }
 
 const handleRemoveImage = (qid) => {
@@ -215,7 +222,7 @@ const handleSubmit = async () => {
       const ans = answers.value[qid]
       if (ans.text || ans.image) {
         details.push({
-          question_id: String(qid), // 确保是字符串
+          question_id: qid,
           text_content: ans.text,
           image_url: ans.image
         })
@@ -223,7 +230,7 @@ const handleSubmit = async () => {
     }
 
     const res = await submitHomework({
-      homework_id: String(homework.value.id),
+      homework_id: homework.value.id,
       details: details
     })
     

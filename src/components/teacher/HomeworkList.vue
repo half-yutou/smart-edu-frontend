@@ -63,32 +63,45 @@
         <div v-else class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
           <div v-for="(q, index) in form.questions" :key="index" class="p-5 bg-white rounded-xl border border-gray-200 shadow-sm relative group hover:border-primary transition-colors">
             <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-               <n-button circle size="small" type="error" secondary @click="removeQuestion(index)">
-                 <template #icon><n-icon :component="TrashOutline" /></template>
-               </n-button>
+                <n-button circle size="small" type="error" secondary @click="removeQuestion(index)">
+                  <template #icon><n-icon :component="TrashOutline" /></template>
+                </n-button>
             </div>
             
             <div class="flex items-center gap-2 mb-3">
-               <n-tag type="primary" size="small">第 {{ index + 1 }} 题</n-tag>
-               <div class="w-32">
-                 <n-select v-model:value="q.question_type" :options="typeOptions" size="small" />
-               </div>
-               <div class="flex items-center gap-2 ml-4 bg-gray-50 px-2 py-1 rounded">
-                 <span class="text-xs text-gray-500">本题分值:</span>
-                 <n-input-number v-model:value="q.score" size="tiny" :min="1" style="width: 80px" />
-               </div>
+                <n-tag type="primary" size="small">第 {{ index + 1 }} 题</n-tag>
+                <div class="w-32">
+                  <n-select v-model:value="q.question_type" :options="typeOptions" size="small" />
+                </div>
+                <div class="flex items-center gap-2 ml-4 bg-gray-50 px-2 py-1 rounded">
+                  <span class="text-xs text-gray-500">本题分值:</span>
+                  <n-input-number v-model:value="q.score" size="tiny" :min="1" style="width: 80px" />
+                </div>
             </div>
             
             <n-input v-model:value="q.content" type="textarea" placeholder="请输入题目描述..." :rows="2" class="mb-3 font-medium" />
             
             <div v-if="q.question_type === 'choice'" class="mb-3 p-3 bg-blue-50 rounded-lg">
-              <label class="text-xs text-blue-600 mb-1 block">选项设置</label>
-              <n-input v-model:value="q.options" placeholder="JSON格式: {'A':'选项1', 'B':'选项2'} 或 逗号分隔: 选项1,选项2" />
+              <label class="text-xs text-blue-600 mb-2 block">选项设置</label>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <n-input v-model:value="q.optionA" placeholder="选项 A 内容">
+                  <template #prefix>A.</template>
+                </n-input>
+                <n-input v-model:value="q.optionB" placeholder="选项 B 内容">
+                  <template #prefix>B.</template>
+                </n-input>
+                <n-input v-model:value="q.optionC" placeholder="选项 C 内容">
+                  <template #prefix>C.</template>
+                </n-input>
+                <n-input v-model:value="q.optionD" placeholder="选项 D 内容">
+                  <template #prefix>D.</template>
+                </n-input>
+              </div>
             </div>
             
             <div>
-               <label class="text-xs text-gray-500 mb-1 block">标准答案 (用于 AI 自动批改)</label>
-               <n-input v-model:value="q.standard_answer" placeholder="例如: A (选择题) 或 关键词 (简答题)" />
+                <label class="text-xs text-gray-500 mb-1 block">标准答案 (用于 AI 自动批改)</label>
+                <n-input v-model:value="q.correct_answer" placeholder="例如: A (选择题) 或 关键词 (简答题)" />
             </div>
           </div>
         </div>
@@ -152,7 +165,10 @@ const fetchList = async () => {
   try {
     const res = await getTeacherHomeworkList(props.classId)
     if (res.code === 0) {
-      list.value = res.data || []
+      list.value = (res.data || []).map(item => ({
+        ...item,
+        id: item.id || item.ID
+      }))
     }
   } catch (e) {} finally {
     loading.value = false
@@ -164,8 +180,11 @@ const addQuestion = () => {
     question_type: 'text',
     content: '',
     score: 10,
-    options: '',
-    standard_answer: ''
+    optionA: '',
+    optionB: '',
+    optionC: '',
+    optionD: '',
+    correct_answer: ''
   })
 }
 
@@ -187,7 +206,32 @@ const editHomework = (hw) => {
   currentHwId.value = hw.id
   form.title = hw.title
   form.deadline = new Date(hw.deadline).getTime()
-  form.questions = JSON.parse(JSON.stringify(hw.questions || []))
+  
+  // 处理题目数据，解析 options
+  form.questions = (hw.questions || []).map(q => {
+    let opts = q.options
+    // 如果是字符串（可能是旧数据），尝试解析
+    if (typeof opts === 'string') {
+      try {
+        opts = JSON.parse(opts)
+      } catch (e) {
+        opts = {}
+      }
+    }
+    opts = opts || {}
+    
+    return {
+      ...q,
+      id: q.id || q.ID, // 确保获取到 ID
+      question_type: q.question_type || 'text',
+      optionA: opts.A || '',
+      optionB: opts.B || '',
+      optionC: opts.C || '',
+      optionD: opts.D || '',
+      correct_answer: q.correct_answer || q.standard_answer || ''
+    }
+  })
+  
   showCreate.value = true
 }
 
@@ -200,14 +244,33 @@ const handleCreate = () => {
     if (!errors) {
       creating.value = true
       try {
-        const processedQuestions = form.questions.map(q => ({
-          ...q,
-          id: q.id ? String(q.id) : '0',
-          options: (q.question_type === 'choice' && q.options) ? q.options : '{}'
-        }))
+        const processedQuestions = form.questions.map(q => {
+          // 构造 options 对象
+          let options = null
+          if (q.question_type === 'choice') {
+            options = {
+              A: q.optionA || '',
+              B: q.optionB || '',
+              C: q.optionC || '',
+              D: q.optionD || ''
+            }
+          }
+          
+          const qId = q.id || q.ID
+          // 必须移除原始的 ID 字段（如果是数字），否则可能会干扰后端 JSON 解析
+          // 构造一个新的纯净对象
+          return {
+            question_type: q.question_type,
+            content: q.content,
+            score: q.score,
+            correct_answer: q.correct_answer || q.standard_answer, // 兼容旧数据
+            id: qId ? String(qId) : '0',
+            options: options
+          }
+        })
 
         const payload = {
-          class_id: String(props.classId),
+          class_id: props.classId,
           title: form.title,
           content: form.title,
           deadline: new Date(form.deadline).toISOString(),
@@ -216,7 +279,7 @@ const handleCreate = () => {
         
         let res
         if (isEdit.value) {
-          payload.homework_id = String(currentHwId.value)
+          payload.homework_id = currentHwId.value
           res = await updateHomework(payload)
         } else {
           res = await createHomework(payload)
@@ -230,7 +293,6 @@ const handleCreate = () => {
           message.error(res.msg || '操作失败')
         }
       } catch (e) {
-        console.error(e)
         message.error('请求失败: ' + (e.msg || e.message || '未知错误'))
       } finally {
         creating.value = false

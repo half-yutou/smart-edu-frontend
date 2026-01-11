@@ -23,7 +23,6 @@
       <div class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
         <div class="text-center mb-10">
           <h2 class="text-3xl font-bold text-gray-800">欢迎回来</h2>
-          <p class="text-gray-500 mt-2">请登录您的账号以继续</p>
         </div>
 
         <n-form ref="formRef" :model="form" :rules="rules" size="large">
@@ -75,7 +74,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage, NForm, NFormItem, NInput, NButton, NIcon, NRadioGroup, NRadioButton } from 'naive-ui'
-import { PhonePortraitOutline, LockClosedOutline, PersonOutline } from '@vicons/ionicons5'
+import { LockClosedOutline, PersonOutline } from '@vicons/ionicons5'
 import { login } from '../api/auth'
 
 const router = useRouter()
@@ -92,11 +91,11 @@ const form = reactive({
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, message: '用户名至少3位', trigger: 'blur' }
+    { min: 3, message: '用户名不能少于3位', trigger: 'blur' }
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+    { min: 6, message: '密码不能少于6位', trigger: 'blur' }
   ]
 }
 
@@ -112,27 +111,20 @@ const handleLogin = (e) => {
           role: form.role
         })
         
-        console.log('Login response:', res) // Debug log
-
-        if (res.code === 0) {
-          const userData = res.data || {}
-          if (!userData.token) {
-             throw new Error('Token missing')
-          }
-          localStorage.setItem('token', userData.token)
-          localStorage.setItem('user', JSON.stringify(userData))
-          message.success('登录成功')
-          
-          if (userData.role === 'teacher') {
-            router.push('/teacher/dashboard')
-          } else {
-            router.push('/student/dashboard')
-          }
+        const userData = res.data || {}
+        if (!userData.token) {
+            throw new Error('Token missing')
+        }
+        localStorage.setItem('token', userData.token)
+        localStorage.setItem('user', JSON.stringify(userData))
+        message.success('登录成功')
+        
+        if (userData.role === 'teacher') {
+          router.push('/teacher/dashboard')
         } else {
-          message.error(res.msg || '登录失败')
+          router.push('/student/dashboard')
         }
       } catch (error) {
-        console.error('Login error:', error) // Debug log
         message.error(error.message || '网络错误或服务器异常')
       } finally {
         loading.value = false

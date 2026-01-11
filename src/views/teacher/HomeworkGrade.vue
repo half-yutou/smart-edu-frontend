@@ -125,7 +125,10 @@ const fetchList = async () => {
   try {
     const res = await getHomeworkSubmissions(homeworkId)
     if (res.code === 0) {
-      list.value = res.data || []
+      list.value = (res.data || []).map(item => ({
+        ...item,
+        id: item.id || item.ID
+      }))
     }
   } catch (e) {
     message.error(e.message || '保存失败')
@@ -152,14 +155,14 @@ const handleSubmitGrade = async () => {
     const details = []
     for (const did in gradingForm) {
       details.push({
-        detail_id: String(did),
+        detail_id: did,
         score: gradingForm[did].score,
         comment: gradingForm[did].comment
       })
     }
 
     const res = await gradeSubmission({
-      submission_id: String(currentSub.value.id),
+      submission_id: currentSub.value.id,
       details: details
     })
     
@@ -186,7 +189,7 @@ const getQuestionScore = (qid) => {
 }
 const getQuestionAnswer = (qid) => {
   const q = homework.value.questions?.find(q => q.id === qid)
-  return q ? q.standard_answer : ''
+  return q ? (q.correct_answer || q.standard_answer) : ''
 }
 
 onMounted(fetchList)

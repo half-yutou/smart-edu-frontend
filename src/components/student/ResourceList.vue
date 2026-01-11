@@ -69,7 +69,10 @@ const fetchList = async () => {
   try {
     const res = await getClassResources(props.classId)
     if (res.code === 0) {
-      list.value = res.data.list || []
+      list.value = (res.data.list || []).map(item => ({
+        ...item,
+        id: item.id || item.ID
+      }))
     }
   } catch (e) {
     // handled

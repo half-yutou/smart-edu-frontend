@@ -70,7 +70,11 @@ const fetchDetail = async () => {
   try {
     const res = await getClassDetail(classId)
     if (res.code === 0) {
-      classInfo.value = res.data
+      classInfo.value = {
+        ...res.data,
+        id: res.data.id || res.data.ID,
+        teacher_name: res.data.teacher?.nickname || res.data.teacher?.username || '未知教师'
+      }
     }
   } catch (e) {
     message.error('获取班级信息失败')

@@ -34,13 +34,12 @@ service.interceptors.response.use(
     
     // 业务逻辑错误
     if (res.code !== 0) {
-      // 可以在这里统一处理错误提示，也可以抛出让组件自己处理
-      // 为了方便，我们这里不强制弹窗，因为有些组件想自己控制
-      // 但如果是 401，必须处理
-      if (res.code === 401) {
-        message.error('登录已过期，请重新登录')
+      // 对接后端 errno.AuthFailed = 200002
+      if (res.code === 200002) {
+        message.error(res.msg || '登录已过期，请重新登录')
         localStorage.clear()
         window.location.href = '/login'
+        return Promise.reject(new Error(res.msg || 'Auth Failed'))
       }
       // 封装为 Error 对象，以便前端组件可以用 error.message 获取错误信息
       const err = new Error(res.msg || 'Error')
@@ -49,7 +48,7 @@ service.interceptors.response.use(
       return Promise.reject(err)
     }
     
-    return res // 为了方便，我们返回整个 res，让组件去取 res.data
+    return res
   },
   error => {
     message.error(error.message || '网络请求失败')

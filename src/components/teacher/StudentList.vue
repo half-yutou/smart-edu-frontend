@@ -39,17 +39,7 @@ const pagination = { pageSize: 10 }
 const columns = [
   { title: 'ID', key: 'id', width: 80 },
   { title: '用户名', key: 'username' },
-  { title: '昵称', key: 'nickname' },
-  { title: '手机号', key: 'phone' },
-  { 
-    title: '加入时间', 
-    key: 'created_at',
-    render(row) {
-      return new Date(row.created_at).toLocaleString() // Note: User model created_at is user creation, not join time. Join time is in junction table, API returns User objects. So this is user reg time. 
-      // If we want join time, backend needs to return it. For now, show reg time or nothing.
-      // Actually let's just show basic info.
-    }
-  }
+  { title: '昵称', key: 'nickname' }
 ]
 
 const fetchList = async () => {
@@ -58,7 +48,10 @@ const fetchList = async () => {
   try {
     const res = await getClassMembers(props.classId)
     if (res.code === 0) {
-      list.value = res.data || []
+      list.value = (res.data || []).map(item => ({
+        ...item,
+        id: item.id || item.ID
+      }))
     }
   } catch (e) {
   } finally {

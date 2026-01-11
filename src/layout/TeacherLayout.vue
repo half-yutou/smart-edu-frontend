@@ -35,12 +35,18 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { NButton, useMessage } from 'naive-ui'
+import { logout } from '../api/auth'
 
 const router = useRouter()
 const message = useMessage()
 const user = JSON.parse(localStorage.getItem('user') || '{}')
 
-const handleLogout = () => {
+const handleLogout = async () => {
+  try {
+    await logout()
+  } catch (e) {
+    // 即使后端报错也强制退出
+  }
   localStorage.clear()
   message.success('已退出')
   router.push('/login')

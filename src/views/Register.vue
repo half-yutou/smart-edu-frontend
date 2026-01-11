@@ -61,7 +61,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage, NForm, NFormItem, NInput, NButton, NRadioGroup, NRadioButton } from 'naive-ui'
-import { register } from '../api/auth'
+import { register, login } from '../api/auth'
 
 const router = useRouter()
 const message = useMessage()
@@ -79,10 +79,10 @@ const form = reactive({
 const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, message: '用户名至少3位', trigger: 'blur' }
+    { min: 3, message: '用户名不能少于3位', trigger: 'blur' }
   ],
   nickname: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, message: '不少于6位', trigger: 'blur' }],
+  password: [{ required: true, message: '请输入密码', trigger: 'blur' }, { min: 6, message: '密码不能少于6位', trigger: 'blur' }],
   confirmPassword: [
     { required: true, message: '请确认密码', trigger: 'blur' },
     { validator: (rule, value) => value === form.password, message: '两次密码不一致', trigger: 'blur' }
@@ -95,21 +95,36 @@ const handleRegister = (e) => {
     if (!errors) {
       loading.value = true
       try {
-        const res = await register({
+        // 1. 注册
+        await register({
           username: form.username,
           password: form.password,
           nickname: form.nickname,
           role: form.role
         })
         
-        if (res.code === 0) {
-          message.success('注册成功，请登录')
-          router.push('/login')
+        message.success('注册成功，正在自动登录...')
+
+        // 2. 自动登录
+        const loginRes = await login({
+          username: form.username,
+          password: form.password,
+          role: form.role
+        })
+
+        const userData = loginRes.data || {}
+        localStorage.setItem('token', userData.token)
+        localStorage.setItem('user', JSON.stringify(userData))
+        
+        message.success('欢迎加入 SmartEduHub')
+
+        if (userData.role === 'teacher') {
+          router.push('/teacher/dashboard')
         } else {
-          message.error(res.data.msg || '注册失败')
+          router.push('/student/dashboard')
         }
       } catch (error) {
-        message.error('网络错误')
+        message.error(error.message || '注册失败')
       } finally {
         loading.value = false
       }

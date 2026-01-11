@@ -172,24 +172,24 @@ const initDanmaku = async () => {
 
   // 加载弹幕列表
   try {
-    const res = await getDanmakuList(props.resource.id)
+    const resId = props.resource.id || props.resource.ID
+    const res = await getDanmakuList(resId)
     if (res.code === 0 && res.data) {
       const comments = res.data.map(d => ({
         text: d.content,
-        time: d.time, // 前端接收的 JSON 字段名仍为 time (由 model 的 json tag 决定)
+        time: d.time,
         style: {
           fontSize: '20px',
           color: d.color,
-          textShadow: '1px 1px 2px black', // 增加描边效果
+          textShadow: '1px 1px 2px black',
         },
-        mode: 'rtl' // 既然数据库没 type 字段，暂时默认滚动
+        mode: 'rtl'
       }))
-      // 直接替换 comments 可能会有问题，使用 emit 批量发送或者 reset
-      // danmaku 库好像不支持直接 reset comments，但如果初始化时传入空，后面可以 emit
-      // 其实 Danmaku 构造函数接收 comments，我们可能需要重新 new 或者 遍历 emit
-      // 文档说 new Danmaku({ comments: [...] })
-      // 让我们重新初始化带数据的
-      danmakuInstance.value.destroy()
+      
+      // 重新初始化带数据的实例
+      if (danmakuInstance.value) {
+        danmakuInstance.value.destroy()
+      }
       danmakuInstance.value = new Danmaku({
         container: danmakuContainer.value,
         media: videoPlayer.value,
@@ -197,9 +197,7 @@ const initDanmaku = async () => {
         engine: 'dom'
       })
     }
-  } catch (e) {
-    console.error('Failed to load danmaku', e)
-  }
+  } catch (e) {}
 }
 
 const handleSendDanmaku = async () => {

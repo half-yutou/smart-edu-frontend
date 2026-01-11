@@ -76,15 +76,6 @@ const routes = [
       }
     ]
   },
-  // 旧的 dashboard 路由作为兜底
-  {
-    path: '/dashboard',
-    redirect: to => {
-      const user = JSON.parse(localStorage.getItem('user') || '{}')
-      if (user.role === 'teacher') return '/teacher/dashboard'
-      return '/student/dashboard'
-    }
-  }
 ]
 
 const router = createRouter({

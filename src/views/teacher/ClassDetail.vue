@@ -26,10 +26,7 @@
                 <n-icon :component="BookOutline" class="mr-1 relative top-[1px]" />
                 {{ classInfo.subject_name }}
               </span>
-              <span class="bg-white px-2 py-1 rounded shadow-sm">
-                <n-icon :component="PeopleOutline" class="mr-1 relative top-[1px]" />
-                {{ classInfo.member_count }} 人
-              </span>
+
             </div>
           </div>
           <div class="text-right hidden md:block">
@@ -61,7 +58,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NCard, NButton, NIcon, NSpin, NTabs, NTabPane, useMessage } from 'naive-ui'
-import { ArrowBackOutline, PeopleOutline, SchoolOutline, BookOutline, CopyOutline } from '@vicons/ionicons5'
+import { ArrowBackOutline, SchoolOutline, BookOutline, CopyOutline } from '@vicons/ionicons5'
 import { useClipboard } from '@vueuse/core'
 import { getClassDetail } from '../../api/class'
 import HomeworkList from '../../components/teacher/HomeworkList.vue'
@@ -87,9 +84,9 @@ const fetchDetail = async () => {
   }
 }
 
-const copyCode = async (code) => {
+const copyCode = (code) => {
   if (!code) return
-  await copy(code)
+  copy(code)
   message.success('邀请码已复制')
 }
 

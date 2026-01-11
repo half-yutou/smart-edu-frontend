@@ -135,7 +135,10 @@ const fetchList = async () => {
   try {
     const res = await getClassResources(props.classId)
     if (res.code === 0) {
-      list.value = res.data.list || []
+      list.value = (res.data.list || []).map(item => ({
+        ...item,
+        id: item.id || item.ID
+      }))
     }
   } catch (e) {
     // handled
@@ -149,7 +152,10 @@ const fetchMyResources = async () => {
   try {
     const res = await getMyResources()
     if (res.code === 0) {
-      myResources.value = res.data || []
+      myResources.value = (res.data || []).map(item => ({
+        ...item,
+        id: item.id || item.ID
+      }))
     }
   } catch (e) {
   } finally {

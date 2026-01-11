@@ -60,6 +60,7 @@ import { NModal, NCard, NInput, NSelect, NIcon, NSpin, NTag, NPagination, NButto
 import { FolderOpenOutline, VideocamOutline, DocumentTextOutline } from '@vicons/ionicons5'
 import { getResourceList } from '../../api/resource'
 import { formatGrade } from '../../utils/format'
+import { SUBJECT_OPTIONS, GRADE_OPTIONS, RESOURCE_TYPE_OPTIONS } from '../../utils/constants'
 
 const props = defineProps({
   show: {
@@ -88,40 +89,19 @@ const searchForm = reactive({
   res_type: null
 })
 
-const subjectOptions = [
-  { label: '数学', value: 1 },
-  { label: '语文', value: 2 },
-  { label: '英语', value: 3 },
-  { label: '物理', value: 4 },
-  { label: '化学', value: 5 }
-]
-
-const gradeOptions = [
-  { label: '一年级', value: 1 },
-  { label: '二年级', value: 2 },
-  { label: '三年级', value: 3 },
-  { label: '四年级', value: 4 },
-  { label: '五年级', value: 5 },
-  { label: '六年级', value: 6 },
-  { label: '初一', value: 7 },
-  { label: '初二', value: 8 },
-  { label: '初三', value: 9 },
-  { label: '高一', value: 10 },
-  { label: '高二', value: 11 },
-  { label: '高三', value: 12 }
-]
-
-const typeOptions = [
-  { label: '视频', value: 'video' },
-  { label: '文档', value: 'document' }
-]
+const subjectOptions = SUBJECT_OPTIONS
+const gradeOptions = GRADE_OPTIONS
+const typeOptions = RESOURCE_TYPE_OPTIONS
 
 const handleSearch = async () => {
   loading.value = true
   try {
     const res = await getResourceList(searchForm)
     if (res.code === 0) {
-      list.value = res.data.list || []
+      list.value = (res.data.list || []).map(item => ({
+        ...item,
+        id: item.id || item.ID
+      }))
       total.value = res.data.total || 0
     }
   } catch (e) {

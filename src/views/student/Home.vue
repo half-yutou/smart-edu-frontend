@@ -68,10 +68,14 @@ const fetchClasses = async () => {
   try {
     const res = await getStudentClassList()
     if (res.code === 0) {
-      classList.value = res.data || []
+      classList.value = (res.data || []).map(item => ({
+        ...item,
+        id: item.id || item.ID,
+        teacher_name: item.teacher?.nickname || item.teacher?.username || '未知教师'
+      }))
     }
   } catch (error) {
-    // 错误已由 request 拦截器统一处理，这里可以忽略或做额外 UI 处理
+    // 拦截器已处理错误
   }
 }
 

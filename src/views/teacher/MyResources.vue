@@ -29,9 +29,9 @@
               <div class="font-bold text-lg truncate" :title="res.title">{{ res.title }}</div>
               <div class="flex gap-2 mt-1">
                 <n-tag size="small" :type="res.res_type === 'video' ? 'info' : 'success'" :bordered="false">
-                  {{ res.res_type === 'video' ? '视频' : '文档' }}
+                  {{ getResourceTypeLabel(res.res_type) }}
                 </n-tag>
-                <n-tag size="small" :bordered="false" v-if="res.subject_name">{{ res.subject_name }}</n-tag>
+                <n-tag size="small" :bordered="false" v-if="res.subject">{{ res.subject.name }}</n-tag>
                 <n-tag size="small" :bordered="false" v-if="res.grade_id">{{ formatGrade(res.grade_id) }}</n-tag>
                 <span class="text-xs text-gray-400 self-center">{{ formatDate(res.created_at) }}</span>
               </div>
@@ -76,10 +76,8 @@
         <n-form-item label="资源文件" path="file_url">
           <div class="w-full">
             <n-upload
-              action="/api/v1/resource/teacher/upload"
-              :headers="uploadHeaders"
+              :custom-request="customUpload"
               :max="1"
-              @finish="handleUploadFinish"
               :show-file-list="false"
             >
               <n-button>点击上传</n-button>
@@ -118,8 +116,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import { NCard, NInput, NSelect, NIcon, NSpin, NTag, NButton, NModal, NForm, NFormItem, NPopconfirm, NUpload, useMessage } from 'naive-ui'
 import { CloudUploadOutline, CloudOfflineOutline, VideocamOutline, DocumentTextOutline } from '@vicons/ionicons5'
-import { getMyResources, createResource, updateResource, deleteResource } from '../../api/resource'
+import { getMyResources, createResource, updateResource, deleteResource, uploadFile } from '../../api/resource'
 import { formatGrade } from '../../utils/format'
+import { SUBJECT_OPTIONS, GRADE_OPTIONS, RESOURCE_TYPE_OPTIONS } from '../../utils/constants'
 import ResourcePreviewModal from '../../components/common/ResourcePreviewModal.vue'
 
 const message = useMessage()
@@ -142,19 +141,25 @@ const form = reactive({
   grade_id: null
 })
 
-const token = localStorage.getItem('token')
-const uploadHeaders = {
-  Authorization: token ? `Bearer ${token}` : ''
+const getResourceTypeLabel = (type) => {
+  const option = RESOURCE_TYPE_OPTIONS.find(o => o.value === type)
+  return option ? option.label : '未知'
 }
 
-const handleUploadFinish = ({ file, event }) => {
-  const res = JSON.parse(event.target.response)
-  if (res.code === 0) {
-    form.file_url = res.data.url
-    message.success('上传成功')
-  } else {
-    message.error(res.msg || '上传失败')
-  }
+const customUpload = ({ file, onFinish, onError }) => {
+  uploadFile(file.file).then(res => {
+    if (res.code === 0) {
+      form.file_url = res.data.url
+      message.success('上传成功')
+      onFinish()
+    } else {
+      message.error(res.msg || '上传失败')
+      onError()
+    }
+  }).catch(() => {
+    message.error('上传失败')
+    onError()
+  })
 }
 
 const rules = {
@@ -165,40 +170,19 @@ const rules = {
   grade_id: [{ required: true, message: '请选择年级', trigger: 'change', type: 'number' }]
 }
 
-const subjectOptions = [
-  { label: '数学', value: 1 },
-  { label: '语文', value: 2 },
-  { label: '英语', value: 3 },
-  { label: '物理', value: 4 },
-  { label: '化学', value: 5 }
-]
-
-const gradeOptions = [
-  { label: '一年级', value: 1 },
-  { label: '二年级', value: 2 },
-  { label: '三年级', value: 3 },
-  { label: '四年级', value: 4 },
-  { label: '五年级', value: 5 },
-  { label: '六年级', value: 6 },
-  { label: '初一', value: 7 },
-  { label: '初二', value: 8 },
-  { label: '初三', value: 9 },
-  { label: '高一', value: 10 },
-  { label: '高二', value: 11 },
-  { label: '高三', value: 12 }
-]
-
-const typeOptions = [
-  { label: '视频', value: 'video' },
-  { label: '文档', value: 'document' }
-]
+const subjectOptions = SUBJECT_OPTIONS
+const gradeOptions = GRADE_OPTIONS
+const typeOptions = RESOURCE_TYPE_OPTIONS
 
 const fetchList = async () => {
   loading.value = true
   try {
     const res = await getMyResources()
     if (res.code === 0) {
-      list.value = res.data || []
+      list.value = (res.data || []).map(item => ({
+        ...item,
+        id: item.id || item.ID
+      }))
     }
   } catch (e) {
   } finally {
@@ -235,26 +219,14 @@ const handleSubmit = () => {
     if (!errors) {
       submitting.value = true
       try {
-        const payload = { ...form }
         if (isEdit.value) {
-          payload.resource_id = currentId.value // Backend expects resource_id for update? need to check
-          // Wait, createResource takes payload, updateResource likely takes payload with id.
-          // Let's check api/resource.js
-          // export function updateResource(data) { return request.post('/resource/teacher/update', data) }
-          // Backend Update expects ID? Usually yes.
-          // Let's assume it needs `id` or `resource_id`. 
-          // `request/resource_dto.go` usually defines this.
-          // Assuming `id` or `resource_id`. I'll use `id` as key and `resource_id` just in case.
-          // Actually, let's verify backend DTO if possible. 
-          // But looking at `teacher_resource.html`:
-          // It doesn't have update implemented fully in the snippet.
-          // Let's assume `id` or `resource_id`. I'll pass both to be safe or check backend.
-          // Let's use `resource_id` as it's common pattern in this project (e.g. homework_id).
-          payload.resource_id = currentId.value
-          await updateResource(payload)
+          await updateResource({
+            ...form,
+            resource_id: currentId.value
+          })
           message.success('更新成功')
         } else {
-          await createResource(payload)
+          await createResource(form)
           message.success('上传成功')
         }
         showModal.value = false

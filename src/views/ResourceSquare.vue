@@ -38,9 +38,9 @@
               <div class="font-bold text-lg truncate" :title="res.title">{{ res.title }}</div>
               <div class="flex gap-2 mt-1">
                 <n-tag size="small" :type="res.res_type === 'video' ? 'info' : 'success'" :bordered="false">
-                  {{ res.res_type === 'video' ? '视频' : '文档' }}
+                  {{ getResourceTypeLabel(res.res_type) }}
                 </n-tag>
-                <n-tag size="small" :bordered="false" v-if="res.subject_name">{{ res.subject_name }}</n-tag>
+                <n-tag size="small" :bordered="false" v-if="res.subject">{{ res.subject.name }}</n-tag>
                 <n-tag size="small" :bordered="false" v-if="res.grade_id">{{ formatGrade(res.grade_id) }}</n-tag>
               </div>
             </div>
@@ -56,7 +56,7 @@
               <n-icon :component="CopyOutline" class="cursor-pointer hover:text-green-600 transition-colors" size="14" @click="copyId(res.id, $event)" title="复制ID" />
             </div>
             <div class="flex justify-between items-center text-xs text-gray-400 border-t pt-2 mt-1">
-              <span>上传者: {{ res.uploader_name || '未知' }}</span>
+              <span>上传者: {{ res.uploader?.nickname || res.uploader?.username || '未知' }}</span>
               <span>{{ formatDate(res.created_at) }}</span>
             </div>
           </div>
@@ -78,6 +78,7 @@ import { NCard, NInput, NSelect, NIcon, NSpin, NTag, NPagination, useMessage } f
 import { SearchOutline, FolderOpenOutline, VideocamOutline, DocumentTextOutline, CopyOutline } from '@vicons/ionicons5'
 import { getResourceList } from '../api/resource'
 import { formatGrade } from '../utils/format'
+import { SUBJECT_OPTIONS, GRADE_OPTIONS, RESOURCE_TYPE_OPTIONS } from '../utils/constants'
 import ResourcePreviewModal from '../components/common/ResourcePreviewModal.vue'
 
 const message = useMessage()
@@ -86,6 +87,11 @@ const list = ref([])
 const total = ref(0)
 const showPreview = ref(false)
 const previewResource = ref(null)
+
+const getResourceTypeLabel = (type) => {
+  const option = RESOURCE_TYPE_OPTIONS.find(o => o.value === type)
+  return option ? option.label : '未知'
+}
 
 const copyId = (id, event) => {
   event.stopPropagation()
@@ -113,33 +119,9 @@ const searchForm = reactive({
   res_type: null
 })
 
-const subjectOptions = [
-  { label: '数学', value: 1 },
-  { label: '语文', value: 2 },
-  { label: '英语', value: 3 },
-  { label: '物理', value: 4 },
-  { label: '化学', value: 5 }
-]
-
-const gradeOptions = [
-  { label: '一年级', value: 1 },
-  { label: '二年级', value: 2 },
-  { label: '三年级', value: 3 },
-  { label: '四年级', value: 4 },
-  { label: '五年级', value: 5 },
-  { label: '六年级', value: 6 },
-  { label: '初一', value: 7 },
-  { label: '初二', value: 8 },
-  { label: '初三', value: 9 },
-  { label: '高一', value: 10 },
-  { label: '高二', value: 11 },
-  { label: '高三', value: 12 }
-]
-
-const typeOptions = [
-  { label: '视频', value: 'video' },
-  { label: '文档', value: 'document' }
-]
+const subjectOptions = SUBJECT_OPTIONS
+const gradeOptions = GRADE_OPTIONS
+const typeOptions = RESOURCE_TYPE_OPTIONS
 
 const handleSearch = async () => {
   loading.value = true

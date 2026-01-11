@@ -58,7 +58,10 @@ const fetchList = async () => {
   try {
     const res = await getStudentHomeworkList(props.classId)
     if (res.code === 0) {
-      list.value = res.data || []
+      list.value = (res.data || []).map(item => ({
+        ...item,
+        id: item.id || item.ID
+      }))
     }
   } catch (e) {
     // handled
