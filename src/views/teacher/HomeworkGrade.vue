@@ -48,7 +48,10 @@
               </div>
               <div>
                 <label class="text-xs text-gray-500 mb-1 block">评语</label>
-                <n-input v-model:value="gradingForm[detail.id].comment" type="text" placeholder="输入评语" />
+                <div v-if="detail.comment" class="text-xs text-gray-400 mb-2 bg-gray-100 p-2 rounded">
+                    AI/原评语: {{ detail.comment }}
+                </div>
+                <n-input v-model:value="gradingForm[detail.id].comment" type="text" placeholder="输入人工复核评语" />
               </div>
             </div>
           </div>
@@ -91,8 +94,8 @@ const columns = [
   { title: '学生姓名', key: 'student.nickname' },
   { 
     title: '提交时间', 
-    key: 'submitted_at',
-    render: (row) => new Date(row.submitted_at).toLocaleString()
+    key: 'created_at',
+    render: (row) => new Date(row.created_at).toLocaleString()
   },
   { 
     title: '总分', 
@@ -103,8 +106,9 @@ const columns = [
     title: '状态',
     key: 'status',
     render: (row) => {
-      const type = row.status === 'graded' ? 'success' : 'warning'
-      const text = row.status === 'graded' ? '已复核' : '待复核'
+      const isDone = row.status === 'feedback_received'
+      const type = isDone ? 'success' : 'warning'
+      const text = isDone ? '已复核' : (row.status === 'ai_graded' ? 'AI已评' : '待复核')
       return h(NTag, { type, size: 'small' }, { default: () => text })
     }
   },

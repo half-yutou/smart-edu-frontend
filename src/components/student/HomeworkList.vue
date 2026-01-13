@@ -85,18 +85,20 @@ const formatDate = (str) => {
 
 const getStatusType = (status) => {
   if (status === 'submitted') return 'warning'
-  if (status === 'graded') return 'success'
+  if (status === 'ai_graded') return 'success'
+  if (status === 'feedback_received') return 'primary'
   return 'default'
 }
 
 const getStatusText = (status) => {
   if (status === 'submitted') return '批改中'
-  if (status === 'graded') return '已批改'
+  if (status === 'ai_graded') return 'AI已评分'
+  if (status === 'feedback_received') return '教师已复核'
   return '未提交'
 }
 
 const isDone = (status) => {
-  return status === 'submitted' || status === 'graded'
+  return status === 'submitted' || status === 'ai_graded' || status === 'feedback_received'
 }
 
 onMounted(fetchList)

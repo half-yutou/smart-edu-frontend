@@ -30,7 +30,7 @@
           </div>
 
           <!-- 如果已批改，显示分数 -->
-          <div v-else class="mb-4 p-4 rounded border" :class="getResultClass(getDetail(q.id), q.score)">
+          <div v-else-if="submission.status === 'ai_graded' || submission.status === 'feedback_received'" class="mb-4 p-4 rounded border" :class="getResultClass(getDetail(q.id), q.score)">
             <div class="flex justify-between items-center mb-2">
               <span class="font-bold" :class="getResultTextClass(getDetail(q.id), q.score)">
                 得分: {{ getDetail(q.id).score }} / {{ q.score }}
@@ -249,12 +249,15 @@ const isSubmitted = computed(() => !!submission.value)
 const statusText = computed(() => {
   if (!submission.value) return '未提交'
   if (submission.value.status === 'submitted') return '批改中'
-  if (submission.value.status === 'graded') return '已批改'
+  if (submission.value.status === 'ai_graded') return 'AI已评分'
+  if (submission.value.status === 'feedback_received') return '教师已复核'
   return submission.value.status
 })
 const statusType = computed(() => {
   if (!submission.value) return 'default'
   if (submission.value.status === 'submitted') return 'warning'
+  if (submission.value.status === 'ai_graded') return 'success'
+  if (submission.value.status === 'feedback_received') return 'primary'
   return 'success'
 })
 

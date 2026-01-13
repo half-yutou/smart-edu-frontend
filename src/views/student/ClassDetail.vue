@@ -55,7 +55,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NCard, NButton, NIcon, NSpin, NTabs, NTabPane, useMessage } from 'naive-ui'
 import { ArrowBackOutline, PersonOutline, SchoolOutline, BookOutline } from '@vicons/ionicons5'
-import { getClassDetail } from '../../api/class'
+import { getClassByID } from '../../api/class'
 import HomeworkList from '../../components/student/HomeworkList.vue'
 import ResourceList from '../../components/student/ResourceList.vue'
 import { formatGrade } from '../../utils/format'
@@ -68,7 +68,7 @@ const classInfo = ref(null)
 
 const fetchDetail = async () => {
   try {
-    const res = await getClassDetail(classId)
+    const res = await getClassByID(classId)
     if (res.code === 0) {
       classInfo.value = {
         ...res.data,

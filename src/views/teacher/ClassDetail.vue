@@ -60,7 +60,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { NCard, NButton, NIcon, NSpin, NTabs, NTabPane, useMessage } from 'naive-ui'
 import { ArrowBackOutline, SchoolOutline, BookOutline, CopyOutline } from '@vicons/ionicons5'
 import { useClipboard } from '@vueuse/core'
-import { getClassDetail } from '../../api/class'
+import { getClassByID } from '../../api/class'
 import HomeworkList from '../../components/teacher/HomeworkList.vue'
 import ResourceList from '../../components/teacher/ResourceList.vue'
 import StudentList from '../../components/teacher/StudentList.vue'
@@ -75,7 +75,7 @@ const classInfo = ref(null)
 
 const fetchDetail = async () => {
   try {
-    const res = await getClassDetail(classId)
+    const res = await getClassByID(classId)
     if (res.code === 0) {
       classInfo.value = res.data
     }
